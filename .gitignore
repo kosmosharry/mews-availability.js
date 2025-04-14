@@ -1,0 +1,4 @@
+# .gitignore
+node_modules/
+.env
+# Add any other files/folders to ignore (like OS files .DS_Store etc.)
