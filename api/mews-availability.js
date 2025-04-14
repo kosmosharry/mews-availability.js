@@ -57,7 +57,7 @@ export default async function handler(request, response) {
     ServiceId: MEWS_SERVICE_ID,
     StartUtc: `${startDate}T00:00:00Z`, // Using UTC start of day
     EndUtc: `${endDate}T23:59:59Z`,   // Using UTC end of day (covers the whole end date)
-    CategoryId: [villaId],
+    CategoryIds: [villaId],
     // Add other relevant optional parameters if needed, e.g., States: ["Confirmed", "Optional"] ? Check docs.
   };
 
