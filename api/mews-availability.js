@@ -1,4 +1,5 @@
 // api/mews-availability.js
+import { zonedTimeToUtc } from 'date-fns-tz';
 
 export default async function handler(request, response) {
     // 1. Method Check & CORS Headers (Consider vercel.json for CORS)
@@ -20,6 +21,7 @@ export default async function handler(request, response) {
     const MEWS_ACCESS_TOKEN = process.env.MEWS_ACCESS_TOKEN;
     const MEWS_CONNECTOR_API_URL = process.env.MEWS_CONNECTOR_API_URL;
     const MEWS_SERVICE_ID = process.env.MEWS_SERVICE_ID;
+
   
     // Basic check - more detailed logging removed for brevity now
     if (!MEWS_CLIENT_TOKEN || !MEWS_ACCESS_TOKEN || !MEWS_SERVICE_ID || !MEWS_CONNECTOR_API_URL) {
@@ -45,40 +47,48 @@ export default async function handler(request, response) {
     // Mews expects the timestamp for the START boundary of the time unit (day) in UTC.
     // Adjust if your hotel timezone needs specific handling, but start of UTC day is common.
     // --- Helper Function to format date for Mews API (NEW - Correct Time) ---
-    function formatToMewsUtc(dateString) {
-        // Use the StartOffset Time (15:00:00) found from /services/getAll
-        const startTime = "15:00:00"; // Correct start time based on P0M0DT15H0M0S
-
+    // --- Helper Function to format date for Mews API (Using date-fns-tz) ---
+    function formatToMewsUtc(dateString, hotelTimeZone) {
+        // Use the StartOffset Time (15:00:00)
+        const startTime = "15:00:00";
+    
         try {
-            // Combine the input date string with the required start time and Z for UTC
-            const dateTimeString = `${dateString}T${startTime}.000Z`;
-            // Create a Date object from the combined string
-            const dt = new Date(dateTimeString);
-            // Check if the created date is valid
-            if (isNaN(dt.getTime())) {
-                throw new Error(`Invalid combined date-time: ${dateTimeString}`);
-            }
+            // Combine the input date string with the required local start time
+            const localDateTimeString = `${dateString} ${startTime}`; // e.g., "2025-05-01 15:00:00"
+    
+            // ** THIS IS WHERE THE TIMEZONE IS USED **
+            // Parse this date *as if* it's in the hotel's local timezone
+            // and convert it to the equivalent UTC Date object
+            const utcDate = zonedTimeToUtc(localDateTimeString, hotelTimeZone);
+    
+            // Check if the conversion resulted in a valid date
+            if (isNaN(utcDate.getTime())) {
+                 throw new Error(`Invalid date after timezone conversion for: ${localDateTimeString} in ${hotelTimeZone}`);
+             }
+    
             // Return the timestamp in ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)
-            return dt.toISOString();
+            return utcDate.toISOString();
+    
         } catch (error) {
-            // Log error if formatting fails
-            console.error(`Error formatting date ${dateString}: ${error.message}`);
-            // Fallback to UTC midnight if formatting fails - Mews will likely reject this still
-            // but prevents the function from crashing completely before the API call.
+            console.error(`Error formatting date ${dateString} with timezone ${hotelTimeZone}: ${error.message}`);
+            // Fallback might still cause Mews error, but prevents full crash
             return `${dateString}T00:00:00.000Z`;
         }
     }
+
+    const HOTEL_TIMEZONE = "Europe/Berlin"; 
   
     // 4. Prepare the request to Mews Connector API (Corrected Endpoint and Payload)
     const mewsEndpoint = `${MEWS_CONNECTOR_API_URL}/api/connector/v1/services/getAvailability`; // CORRECTED
+
   
     const mewsPayload = {
         ClientToken: MEWS_CLIENT_TOKEN,
         AccessToken: MEWS_ACCESS_TOKEN,
         Client: "Kosmos_Availability_Check_1.0", // Identify your client
         ServiceId: MEWS_SERVICE_ID,
-        FirstTimeUnitStartUtc: formatToMewsUtc(startDate), // CORRECTED Parameter
-        LastTimeUnitStartUtc: formatToMewsUtc(endDate),   // CORRECTED Parameter
+        FirstTimeUnitStartUtc: formatToMewsUtc(startDate, HOTEL_TIMEZONE), // Pass timezone here
+        LastTimeUnitStartUtc: formatToMewsUtc(endDate, HOTEL_TIMEZONE),   // Pass timezone here    
         // NO CategoryIds filter here
     };
   
