@@ -1,6 +1,4 @@
-const dateFnsTz = require('date-fns-tz');      
-const zonedTimeToUtc = dateFnsTz.zonedTimeToUtc;
-
+// api/mews-availability.js
 export default async function handler(request, response) {
     // 1. Method Check & CORS Headers (Consider vercel.json for CORS)
     if (request.method === 'OPTIONS') {
@@ -43,32 +41,17 @@ export default async function handler(request, response) {
         return response.status(400).json({ error: error.message || "Invalid request body." });
     }
   
-    const HOTEL_TIMEZONE = "Europe/Berlin"; 
-    
-    // --- Helper Function to format date for Mews API (Using date-fns-tz) ---
-    function formatToMewsUtc(dateString, hotelTimeZone) {
-        // Mews requires the day to start at midnight when checking availability
-        const startTime = "00:00:00";
-
+    // --- Helper Function to format date for Mews API ---
+    // For Mews: Start of time unit appears to need to be a specific time
+    // We'll set it to 14:00:00 UTC explicitly based on common hotel checkin times
+    function formatToMewsUtc(dateString) {
         try {
-            // Combine the input date string with the start time
-            const localDateTimeString = `${dateString}T${startTime}`;
-
-            // Parse this date in the hotel's local timezone and convert to UTC
-            const utcDate = zonedTimeToUtc(localDateTimeString, hotelTimeZone);
-
-            // Check if the conversion resulted in a valid date
-            if (isNaN(utcDate.getTime())) {
-                throw new Error(`Invalid date after timezone conversion for: ${localDateTimeString} in ${hotelTimeZone}`);
-            }
-
-            // Return the timestamp in ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)
-            return utcDate.toISOString();
-
+            // Format date as ISO string but with a fixed time (14:00:00 UTC)
+            // This is the specific time that Mews likely considers as the "start of TimeUnit"
+            return `${dateString}T14:00:00.000Z`;
         } catch (error) {
-            console.error(`Error formatting date ${dateString} with timezone ${hotelTimeZone}: ${error.message}`);
-            // In case of error, return a properly formatted fallback that matches Mews' expectation
-            return `${dateString}T00:00:00.000Z`;
+            console.error(`Error formatting date ${dateString}: ${error.message}`);
+            return `${dateString}T14:00:00.000Z`; 
         }
     }
   
@@ -80,8 +63,8 @@ export default async function handler(request, response) {
         AccessToken: MEWS_ACCESS_TOKEN,
         Client: "Kosmos_Availability_Check_1.0", 
         ServiceId: MEWS_SERVICE_ID,
-        FirstTimeUnitStartUtc: formatToMewsUtc(startDate, HOTEL_TIMEZONE),
-        LastTimeUnitStartUtc: formatToMewsUtc(endDate, HOTEL_TIMEZONE),
+        FirstTimeUnitStartUtc: formatToMewsUtc(startDate),
+        LastTimeUnitStartUtc: formatToMewsUtc(endDate),
     };
   
     console.log(`Calling Mews API Endpoint: ${mewsEndpoint}`);
