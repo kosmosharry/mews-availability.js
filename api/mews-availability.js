@@ -1,5 +1,5 @@
 // api/mews-availability.js
-import { zonedTimeToUtc } from 'date-fns-tz';
+const { zonedTimeToUtc } = require('date-fns-tz'); // Changed to CommonJS import
 
 export default async function handler(request, response) {
     // 1. Method Check & CORS Headers (Consider vercel.json for CORS)
@@ -43,54 +43,45 @@ export default async function handler(request, response) {
         return response.status(400).json({ error: error.message || "Invalid request body." });
     }
   
-    // --- Helper Function to format date for Mews API (start of day UTC) ---
-    // Mews expects the timestamp for the START boundary of the time unit (day) in UTC.
-    // Adjust if your hotel timezone needs specific handling, but start of UTC day is common.
-    // --- Helper Function to format date for Mews API (NEW - Correct Time) ---
+    const HOTEL_TIMEZONE = "Europe/Berlin"; 
+    
     // --- Helper Function to format date for Mews API (Using date-fns-tz) ---
     function formatToMewsUtc(dateString, hotelTimeZone) {
-        // Use the StartOffset Time (15:00:00)
-        const startTime = "15:00:00";
+        // Mews requires the day to start at midnight when checking availability
+        const startTime = "00:00:00";
 
         try {
-            // Combine the input date string with the required local start time
-            const localDateTimeString = `${dateString} ${startTime}`; // e.g., "2025-05-01 15:00:00"
+            // Combine the input date string with the start time
+            const localDateTimeString = `${dateString}T${startTime}`;
 
-            // ** THIS IS WHERE THE TIMEZONE IS USED **
-            // Parse this date *as if* it's in the hotel's local timezone
-            // and convert it to the equivalent UTC Date object
+            // Parse this date in the hotel's local timezone and convert to UTC
             const utcDate = zonedTimeToUtc(localDateTimeString, hotelTimeZone);
 
             // Check if the conversion resulted in a valid date
             if (isNaN(utcDate.getTime())) {
-                 throw new Error(`Invalid date after timezone conversion for: ${localDateTimeString} in ${hotelTimeZone}`);
-             }
+                throw new Error(`Invalid date after timezone conversion for: ${localDateTimeString} in ${hotelTimeZone}`);
+            }
 
             // Return the timestamp in ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)
             return utcDate.toISOString();
 
         } catch (error) {
             console.error(`Error formatting date ${dateString} with timezone ${hotelTimeZone}: ${error.message}`);
-            // Fallback might still cause Mews error, but prevents full crash
-            // Consider throwing the error instead or returning null/undefined
-            // to be handled by the caller function (handler).
-            return `${dateString}T00:00:00.000Z`; // Or better: throw error;
+            // In case of error, return a properly formatted fallback that matches Mews' expectation
+            return `${dateString}T00:00:00.000Z`;
         }
     }
-    const HOTEL_TIMEZONE = "Europe/Berlin"; 
   
-    // 4. Prepare the request to Mews Connector API (Corrected Endpoint and Payload)
-    const mewsEndpoint = `${MEWS_CONNECTOR_API_URL}/api/connector/v1/services/getAvailability`; // CORRECTED
-
+    // 4. Prepare the request to Mews Connector API
+    const mewsEndpoint = `${MEWS_CONNECTOR_API_URL}/api/connector/v1/services/getAvailability`;
   
     const mewsPayload = {
         ClientToken: MEWS_CLIENT_TOKEN,
         AccessToken: MEWS_ACCESS_TOKEN,
-        Client: "Kosmos_Availability_Check_1.0", // Identify your client
+        Client: "Kosmos_Availability_Check_1.0", 
         ServiceId: MEWS_SERVICE_ID,
-        FirstTimeUnitStartUtc: formatToMewsUtc(startDate, HOTEL_TIMEZONE), // Pass timezone here
-        LastTimeUnitStartUtc: formatToMewsUtc(endDate, HOTEL_TIMEZONE),   // Pass timezone here    
-        // NO CategoryIds filter here
+        FirstTimeUnitStartUtc: formatToMewsUtc(startDate, HOTEL_TIMEZONE),
+        LastTimeUnitStartUtc: formatToMewsUtc(endDate, HOTEL_TIMEZONE),
     };
   
     console.log(`Calling Mews API Endpoint: ${mewsEndpoint}`);
@@ -115,7 +106,7 @@ export default async function handler(request, response) {
         const mewsData = await mewsApiResponse.json();
         console.log("Received Mews API OK Response (Snippet):", JSON.stringify(mewsData).substring(0, 500) + "...");
   
-        // 6. Process the Mews response (Corrected Logic)
+        // 6. Process the Mews response
         const unavailableDates = new Set();
         const targetCategoryId = villaId; // The category ID we care about
   
@@ -138,8 +129,6 @@ export default async function handler(request, response) {
                 console.warn(`Mismatch between TimeUnit count (${mewsData.TimeUnitStartsUtc.length}) and Availability count (${targetCategoryData.Availabilities?.length}) for category ${targetCategoryId}`);
             } else {
                 console.warn(`Availability data for target CategoryId ${targetCategoryId} not found in Mews response.`);
-                // If the category isn't returned at all, should we treat all dates as unavailable? Depends on requirements.
-                // For now, we won't add any dates to unavailable if the category isn't found.
             }
         } else {
             console.warn("Mews response structure might be different than expected. Could not process CategoryAvailabilities or TimeUnitStartsUtc.");
@@ -158,6 +147,4 @@ export default async function handler(request, response) {
         console.error("Error within backend function execution:", error.message, error.stack);
         return response.status(500).json({ error: "An internal server error occurred." });
     }
-  }
-  
-  // Note: Removed the explicit OPTIONS handler for now, rely on Vercel's default or vercel.json if needed.
+}
