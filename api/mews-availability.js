@@ -48,10 +48,10 @@ export default async function handler(request, response) {
         try {
             // Format date as ISO string but with a fixed time (14:00:00 UTC)
             // This is the specific time that Mews likely considers as the "start of TimeUnit"
-            return `${dateString}T4:00:00.000Z`;
+            return `${dateString}T04:00:00.000Z`;
         } catch (error) {
             console.error(`Error formatting date ${dateString}: ${error.message}`);
-            return `${dateString}T4:00:00.000Z`; 
+            return `${dateString}T04:00:00.000Z`; 
         }
     }
   
