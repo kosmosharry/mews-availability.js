@@ -48,6 +48,7 @@ export default async function handler(request, response) {
     // Adjust if your hotel timezone needs specific handling, but start of UTC day is common.
     // --- Helper Function to format date for Mews API (NEW - Correct Time) ---
     // --- Helper Function to format date for Mews API (Using date-fns-tz) ---
+    const { zonedTimeToUtc } = require('date-fns-tz');
     function formatToMewsUtc(dateString, hotelTimeZone) {
         // Use the StartOffset Time (15:00:00)
         const startTime = "15:00:00";
