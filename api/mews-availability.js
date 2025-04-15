@@ -1,5 +1,5 @@
-// api/mews-availability.js
-const { zonedTimeToUtc } = require('date-fns-tz'); // Changed to CommonJS import
+const dateFnsTz = require('date-fns-tz');      
+const zonedTimeToUtc = dateFnsTz.zonedTimeToUtc;
 
 export default async function handler(request, response) {
     // 1. Method Check & CORS Headers (Consider vercel.json for CORS)
