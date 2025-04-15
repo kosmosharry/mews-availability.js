@@ -43,15 +43,15 @@ export default async function handler(request, response) {
   
     // --- Helper Function to format date for Mews API ---
     // For Mews: Start of time unit appears to need to be a specific time
-    // We'll set it to 14:00:00 UTC explicitly based on common hotel checkin times
+    // We'll set it to 12:00:00 UTC explicitly based on common hotel checkin times
     function formatToMewsUtc(dateString) {
         try {
-            // Format date as ISO string but with a fixed time (14:00:00 UTC)
+            // Format date as ISO string but with a fixed time (12:00:00 UTC)
             // This is the specific time that Mews likely considers as the "start of TimeUnit"
-            return `${dateString}T14:00:00.000Z`;
+            return `${dateString}T12:00:00.000Z`;
         } catch (error) {
             console.error(`Error formatting date ${dateString}: ${error.message}`);
-            return `${dateString}T14:00:00.000Z`; 
+            return `${dateString}T12:00:00.000Z`; 
         }
     }
   
