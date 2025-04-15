@@ -48,35 +48,35 @@ export default async function handler(request, response) {
     // Adjust if your hotel timezone needs specific handling, but start of UTC day is common.
     // --- Helper Function to format date for Mews API (NEW - Correct Time) ---
     // --- Helper Function to format date for Mews API (Using date-fns-tz) ---
-    const { zonedTimeToUtc } = require('date-fns-tz');
     function formatToMewsUtc(dateString, hotelTimeZone) {
         // Use the StartOffset Time (15:00:00)
         const startTime = "15:00:00";
-    
+
         try {
             // Combine the input date string with the required local start time
             const localDateTimeString = `${dateString} ${startTime}`; // e.g., "2025-05-01 15:00:00"
-    
+
             // ** THIS IS WHERE THE TIMEZONE IS USED **
             // Parse this date *as if* it's in the hotel's local timezone
             // and convert it to the equivalent UTC Date object
             const utcDate = zonedTimeToUtc(localDateTimeString, hotelTimeZone);
-    
+
             // Check if the conversion resulted in a valid date
             if (isNaN(utcDate.getTime())) {
                  throw new Error(`Invalid date after timezone conversion for: ${localDateTimeString} in ${hotelTimeZone}`);
              }
-    
+
             // Return the timestamp in ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)
             return utcDate.toISOString();
-    
+
         } catch (error) {
             console.error(`Error formatting date ${dateString} with timezone ${hotelTimeZone}: ${error.message}`);
             // Fallback might still cause Mews error, but prevents full crash
-            return `${dateString}T00:00:00.000Z`;
+            // Consider throwing the error instead or returning null/undefined
+            // to be handled by the caller function (handler).
+            return `${dateString}T00:00:00.000Z`; // Or better: throw error;
         }
     }
-
     const HOTEL_TIMEZONE = "Europe/Berlin"; 
   
     // 4. Prepare the request to Mews Connector API (Corrected Endpoint and Payload)
