@@ -46,12 +46,15 @@ export default async function handler(request, response) {
     // We'll set it to 14:00:00 UTC explicitly based on common hotel checkin times
     function formatToMewsUtc(dateString) {
         try {
-            // Format date as ISO string but with a fixed time (14:00:00 UTC)
-            // This is the specific time that Mews likely considers as the "start of TimeUnit"
-            return `${dateString}T22:00:00.000Z`;
+            // Ensure the date format is YYYY-MM-DD
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+              throw new Error(`Invalid date format: ${dateString}. Expected YYYY-MM-DD.`);
+            }
+            // Append midnight UTC time component
+            return `${dateString}T00:00:00.000Z`; // <-- MUST BE T00:00:00.000Z
         } catch (error) {
             console.error(`Error formatting date ${dateString}: ${error.message}`);
-            return `${dateString}T22:00:00.000Z`; 
+            throw error;
         }
     }
   
