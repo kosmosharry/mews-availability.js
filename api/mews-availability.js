@@ -1,4 +1,8 @@
 // api/mews-availability.js
+import { zonedTimeToUtc } from 'date-fns-tz';
+
+const SERVICE_TIME_ZONE = process.env.MEWS_TIME_ZONE || 'America/Denver';
+
 export default async function handler(request, response) {
     // 1. Method Check & CORS Headers (Consider vercel.json for CORS)
     if (request.method === 'OPTIONS') {
@@ -45,15 +49,13 @@ export default async function handler(request, response) {
     // For Mews: Start of time unit appears to need to be a specific time
     // We'll set it to 14:00:00 UTC explicitly based on common hotel checkin times
     function formatToMewsUtc(dateString) {
-        try {
-            // Format date as ISO string but with a fixed time (14:00:00 UTC)
-            // This is the specific time that Mews likely considers as the "start of TimeUnit"
-            return `${dateString}T06:00:00.000Z`;
-        } catch (error) {
-            console.error(`Error formatting date ${dateString}: ${error.message}`);
-            return `${dateString}T06:00:00.000Z`; 
-        }
-    }
+        // 1) Build a "local midnight" ISO (no Z) for that date
+        const localMidnight = `${dateString}T00:00:00`;
+        // 2) Convert "00:00 in Denver" → the correct UTC Date (handles MST/MDT)
+        const utcDate = zonedTimeToUtc(localMidnight, SERVICE_TIME_ZONE);
+        // 3) Emit the ISO string Mews expects: YYYY-MM-DDTHH:mm:ss.sssZ
+        return utcDate.toISOString();
+      }      
   
     // 4. Prepare the request to Mews Connector API
     const mewsEndpoint = `${MEWS_CONNECTOR_API_URL}/api/connector/v1/services/getAvailability`;
