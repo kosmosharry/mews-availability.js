@@ -154,10 +154,17 @@ export default async function handler(request, response) {
         });
 
         console.log("Computed end‑only dates:", endOnlyDates);
+        
+        // Remove end‑only dates from the unavailable array
+        const filteredUnavailable = unavailableArray.filter(
+            d => !endOnlyDates.includes(d)
+        );
+        
+        // and then return *that*…
         return response
-        .status(200)
-        .json({
-            unavailable: unavailableArray,
+            .status(200)
+            .json({
+            unavailable: filteredUnavailable,
             endOnlyDates
         });
   
