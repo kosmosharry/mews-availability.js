@@ -139,7 +139,27 @@ export default async function handler(request, response) {
         console.log("--- Request Success ---");
         response.setHeader('Access-Control-Allow-Origin', '*');
         response.setHeader('Content-Type', 'application/json');
-        return response.status(200).json({ unavailable: Array.from(unavailableDates) });
+        // –– compute endOnlyDates as the first day of each blocked run
+        const unavailableArray = Array.from(unavailableDates).sort();
+        const endOnlyDates = [];
+        let prev = null;
+        unavailableArray.forEach(dateStr => {
+        if (
+            !prev ||
+            DateTime.fromISO(dateStr).diff(DateTime.fromISO(prev), 'days').days > 1
+        ) {
+            endOnlyDates.push(dateStr);
+        }
+        prev = dateStr;
+        });
+
+        console.log("Computed end‑only dates:", endOnlyDates);
+        return response
+        .status(200)
+        .json({
+            unavailable: unavailableArray,
+            endOnlyDates
+        });
   
     } catch (error) {
         console.error("Error within backend function execution:", error.message, error.stack);
