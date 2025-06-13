@@ -118,7 +118,7 @@ export default async function handler(request, response) {
             if (c?.Type !== 'Stay') return;
             let d = DateTime.fromISO(c.StartUtc, { zone: TZ }).startOf('day');
             const end = DateTime.fromISO(c.EndUtc,   { zone: TZ }).startOf('day');
-            while (d < end) {
+            while (d <= end) {
             if (c.Days?.includes(d.weekdayLong)) stayBlocked.push(d.toISODate());
             d = d.plus({ days: 1 });
             }
