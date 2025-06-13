@@ -58,6 +58,9 @@ export default async function handler(request, response) {
   
     // 4. Prepare the request to Mews Connector API
     const mewsEndpoint = `${MEWS_CONNECTOR_API_URL}/api/connector/v1/services/getAvailability`;
+    // Add restrictions endpoint
+    const restrictionsEndpoint = `${MEWS_CONNECTOR_API_URL}/api/connector/v1/restrictions/getAll`;
+
   
     const mewsPayload = {
         ClientToken: MEWS_CLIENT_TOKEN,
@@ -88,6 +91,40 @@ export default async function handler(request, response) {
         }
   
         const mewsData = await mewsApiResponse.json();
+        // --- pull restrictions just for inspection ---
+        const restrictionsPayload = {
+            ClientToken: MEWS_CLIENT_TOKEN,
+            AccessToken: MEWS_ACCESS_TOKEN,
+            ServiceIds: [MEWS_SERVICE_ID],
+            CollidingUtc: {
+            StartUtc: mewsPayload.FirstTimeUnitStartUtc,
+            EndUtc:   mewsPayload.LastTimeUnitStartUtc
+            }
+        };
+        
+        const rRes = await fetch(restrictionsEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(restrictionsPayload),
+        });
+        
+        const rJson = await rRes.json();
+        console.log('Raw Restrictions:', JSON.stringify(rJson).substring(0, 500) + '...');
+        
+        // TEMP: expand each Stay-type restriction into concrete dates and log them
+        const stayBlocked = [];
+        rJson.Restrictions?.forEach(r => {
+            const c = r.Conditions;
+            if (c?.Type !== 'Stay') return;
+            let d = DateTime.fromISO(c.StartUtc, { zone: TZ }).startOf('day');
+            const end = DateTime.fromISO(c.EndUtc,   { zone: TZ }).startOf('day');
+            while (d < end) {
+            if (c.Days?.includes(d.weekdayLong)) stayBlocked.push(d.toISODate());
+            d = d.plus({ days: 1 });
+            }
+        });
+        console.log('Expanded stay-restricted dates:', stayBlocked);
+        
         console.log("Received Mews API OK Response (Snippet):", JSON.stringify(mewsData).substring(0, 500) + "...");
   
         // 6. Process the Mews response
