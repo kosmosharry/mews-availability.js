@@ -157,13 +157,7 @@ export default async function handler(request, response) {
         }
   
         // Loop from start to end, adding each date to unavailableDates
-        for (
-        let dt = restrictedStart;
-        dt <= restrictedEnd;
-        dt = dt.plus({ days: 1 })
-        ) {
-        unavailableDates.add(dt.toISODate());
-        }
+        //Deleted loop code
 
         console.log("Processed unavailable dates:", Array.from(unavailableDates));
   
