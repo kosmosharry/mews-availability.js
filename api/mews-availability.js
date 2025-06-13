@@ -129,6 +129,7 @@ export default async function handler(request, response) {
   
         // 6. Process the Mews response
         const unavailableDates = new Set();
+        stayBlocked.forEach(d => unavailableDates.add(d));
         const targetCategoryId = villaId; // The category ID we care about
   
         if (mewsData.CategoryAvailabilities && Array.isArray(mewsData.CategoryAvailabilities) && mewsData.TimeUnitStartsUtc && Array.isArray(mewsData.TimeUnitStartsUtc)) {
