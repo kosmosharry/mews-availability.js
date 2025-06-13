@@ -156,10 +156,6 @@ export default async function handler(request, response) {
             console.warn("Mews Response Keys:", Object.keys(mewsData));
         }
   
-        // Hard coded restricted dates instead of pulling data from mews for now. 
-        // Define your restricted window
-        const restrictedStart = DateTime.fromISO('2025-04-30', { zone: TZ }).startOf('day');
-        const restrictedEnd   = DateTime.fromISO('2025-05-01', { zone: TZ }).startOf('day');
         // Loop from start to end, adding each date to unavailableDates
         for (
         let dt = restrictedStart;
