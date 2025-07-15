@@ -1,6 +1,6 @@
 // api/mews-availability.js
 import { DateTime } from 'luxon';
-const TZ = process.env.MEWS_TIME_ZONE || 'America/New_York';
+const TZ = process.env.MEWS_TIME_ZONE || 'America/Denver';
 
 export default async function handler(request, response) {
     // 1. Method Check & CORS Headers (Consider vercel.json for CORS)
