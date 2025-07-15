@@ -1,6 +1,6 @@
 # Mews Availability API Backend
 
-This repository contains a Vercel Serverless Function that acts as a secure backend proxy to the Mews Connector API. Its primary purpose is to fetch availability data for a given room category, process it, and provide a simplified list of unavailable dates to a consuming frontend application.
+Developed for Custom booking widget on Kosmos Stargazing Resort & Spa website (kosmosresort.com), This repository contains a Vercel Serverless Function that acts as a secure backend proxy to the Mews Connector API. Its primary purpose is to fetch availability data for a given room category, process it, and provide a simplified list of unavailable dates to a consuming frontend application.
 
 This service was created to keep Mews API credentials secure on the server-side and to handle specific API inconsistencies and data processing logic in a centralized place.
 
@@ -57,23 +57,6 @@ Returns a JSON object containing a single key, `unavailable`, which holds an arr
   ]
 }
 ```
-
-## ⚠️ Important: Implemented API Workarounds
-
-During development against the Mews Demo environment, several critical inconsistencies were discovered for a specific ServiceId. This backend code contains explicit workarounds to handle them. Be aware of these if you adapt this code for a different Mews property or service.
-
-### 1. The TimeUnitStart Issue
-
-**Problem:** The Mews getAvailability endpoint documentation suggests using midnight UTC (T00:00:00.000Z) for FirstTimeUnitStartUtc. However, this timestamp resulted in a 400 Bad Request error: "FirstTimeUnitStartUtc is not start of TimeUnit." for the targeted service.
-
-**Solution:** Through experimentation, it was found that the API only accepted a T22:00:00.000Z timestamp for this service. The code intentionally uses this non-standard timestamp to get a successful response.
-
-### 2. The "Missing Last Day" Issue
-
-**Problem:** A consequence of using the T22:00:00.000Z timestamp is that the Mews API failed to report the last night of a multi-day booking as unavailable.
-
-**Solution:** A server-side date shifting workaround was implemented. This logic identifies the end of a multi-day unavailable block and programmatically adds the next day to the final unavailable array, correcting the data returned to the client.
-
 ## Getting Started
 
 ### Prerequisites
