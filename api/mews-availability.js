@@ -91,41 +91,56 @@ export default async function handler(request, response) {
         }
   
         const mewsData = await mewsApiResponse.json();
-        // --- pull restrictions just for inspection ---
-        const restrictionsPayload = {
-            ClientToken: MEWS_CLIENT_TOKEN,
-            AccessToken: MEWS_ACCESS_TOKEN,
-            ServiceIds: [MEWS_SERVICE_ID],
-            CollidingUtc: {
-            StartUtc: mewsPayload.FirstTimeUnitStartUtc,
-            EndUtc:   mewsPayload.LastTimeUnitStartUtc
-            }
-        };
-        
-        const rRes = await fetch(restrictionsEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(restrictionsPayload),
-        });
-        
-        const rJson = await rRes.json();
-        console.log('Raw Restrictions:', JSON.stringify(rJson).substring(0, 500) + '...');
-        
-        // TEMP: expand each Stay-type restriction into concrete dates and log them
-        const stayBlocked = [];
-        rJson.Restrictions?.forEach(r => {
-            const c = r.Conditions;
-            if (c?.Type !== 'Stay') return;
-            let d = DateTime.fromISO(c.StartUtc, { zone: TZ }).startOf('day');
-            const end = DateTime.fromISO(c.EndUtc,   { zone: TZ }).startOf('day');
-            while (d <= end) {
-            if (c.Days?.includes(d.weekdayLong)) stayBlocked.push(d.toISODate());
-            d = d.plus({ days: 1 });
-            }
-        });
-        console.log('Expanded stay-restricted dates:', stayBlocked);
+
         
         console.log("Received Mews API OK Response (Snippet):", JSON.stringify(mewsData).substring(0, 500) + "...");
+
+        // ─── chunked restriction fetch (max 100 days each) ───
+        const allRestrictions = [];
+        let chunkStart = DateTime.fromISO(startDate, { zone: TZ }).startOf('day');
+        const fullEnd   = DateTime.fromISO(endDate,   { zone: TZ }).startOf('day');
+
+        while (chunkStart <= fullEnd) {
+        const chunkEnd = chunkStart.plus({ days: 99 }).startOf('day') <= fullEnd
+            ? chunkStart.plus({ days: 99 }).startOf('day')
+            : fullEnd;
+
+        const payload = {
+            ClientToken:  MEWS_CLIENT_TOKEN,
+            AccessToken:  MEWS_ACCESS_TOKEN,
+            ServiceIds:   [ MEWS_SERVICE_ID ],
+            CollidingUtc: {
+            StartUtc: chunkStart.toUTC().toISO(),
+            EndUtc:   chunkEnd.toUTC().toISO()
+            }
+        };
+
+        const res  = await fetch(restrictionsEndpoint, {
+            method:  'POST',
+            headers: { 'Content-Type':'application/json' },
+            body:    JSON.stringify(payload)
+        });
+        const json = await res.json();
+        allRestrictions.push(...(json.Restrictions || []));
+
+        chunkStart = chunkEnd.plus({ days: 1 });
+        }
+
+        console.log('Merged Restrictions:', allRestrictions);
+
+        // ─── expand Stay‐type restrictions ───
+        const stayBlocked = [];
+        allRestrictions.forEach(r => {
+        const c = r.Conditions;
+        if (c?.Type !== 'Stay') return;
+        let d   = DateTime.fromISO(c.StartUtc, { zone: TZ }).startOf('day');
+        const e = DateTime.fromISO(c.EndUtc,   { zone: TZ }).startOf('day');
+        while (d <= e) {
+            if (c.Days?.includes(d.weekdayLong)) stayBlocked.push(d.toISODate());
+            d = d.plus({ days: 1 });
+        }
+        });
+        console.log('Expanded stay‐restricted dates:', stayBlocked);
   
         // 6. Process the Mews response
         const unavailableDates = new Set();
