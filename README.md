@@ -1,4 +1,4 @@
-# Mews Availability API Backend
+# Kosmos Stargazing Resort - Custom Mews Availability Calendar - Backend
 
 Developed for the custom booking widget on [Kosmos Stargazing Resort & Spa website](https://www.kosmosresort.com), This repository contains a Vercel Serverless Function that acts as a secure backend proxy to the Mews Connector API. Its primary purpose is to fetch availability data for a given room category, process it, and provide a simplified list of unavailable dates to a consuming frontend application.
 
