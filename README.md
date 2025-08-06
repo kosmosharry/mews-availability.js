@@ -4,6 +4,18 @@ Developed for the custom booking widget on [Kosmos Stargazing Resort & Spa websi
 
 This service was created to keep Mews API credentials secure on the server-side and to handle specific API inconsistencies and data processing logic in a centralized place.
 
+## Architecture
+
+*   **Frontend:** The user interface is built and hosted on **Webflow**. It uses custom code embeds for CSS styling and JavaScript logic.
+    *   **Repository:** The source code for the frontend function is located at: [https://github.com/kosmosharry/mews-availability.js](https://github.com/harryg02/Kosmos-Booking-Calendar-Frontend)
+    *   **UI Library:** [Flatpickr.js](https://flatpickr.js.org/) is used to render the interactive calendar.
+    *   **Logic:** Custom Vanilla JavaScript handles user interactions (opening the calendar), calling the backend API, processing availability data, and constructing the final Mews deeplink.
+
+*   **Backend:** A Node.js serverless function is deployed on **Vercel** to act as a secure proxy.
+    *   **Repository:** The source code for the backend function is located at: [https://github.com/kosmosharry/mews-availability.js](https://github.com/kosmosharry/mews-availability.js)
+    *   **Function:** This function receives requests from the Webflow frontend, securely calls the Mews Connector API (`/api/connector/v1/services/getAvailability`) with protected credentials, processes the availability data, and returns a simplified list of unavailable dates to the frontend.
+
+
 ## Features
 
 - **Secure Credential Handling:** Mews API tokens are managed via environment variables and are never exposed to the client.
